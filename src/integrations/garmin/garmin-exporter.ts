@@ -122,7 +122,18 @@ function buildGarminSegment(
 export function exportWorkoutToGarmin(
   workoutSegments: WorkoutSegmentItem[],
   options: GarminExportOptions,
-): GarminWorkout {}
+): GarminWorkout {
+  const segment = buildGarminSegment(workoutSegments, options.sport);
+
+  return {
+    workoutName: options.workoutName,
+    description: options.description,
+    sport: options.sport,
+    estimatedDurationInSecs: segment.estimatedDurationInSecs,
+    estimatedDistanceInMeters: segment.estimatedDistanceInMeters,
+    segments: [segment],
+  };
+}
 
 // TODO
 export class GarminExporter implements WorkoutExporter<GarminWorkout> {

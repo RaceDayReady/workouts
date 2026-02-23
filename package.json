@@ -12,15 +12,20 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "lint": "prettier --check .",
-    "lint:fix": "prettier --write .",
+    "lint": "npm run lint:eslint && npm run lint:prettier",
+    "lint:fix": "npm run lint:eslint -- --fix && prettier --write .",
     "test": "vitest run",
     "type-check": "tsc --noEmit -p tsconfig.json",
-    "release:check": "npm run lint && npm run type-check && npm run build && npm pack --dry-run"
+    "release:check": "npm run lint && npm run type-check && npm run build && npm pack --dry-run",
+    "lint:eslint": "eslint .",
+    "lint:prettier": "prettier --check ."
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.1",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2",
+    "typescript-eslint": "^8.56.1",
     "vitest": "^3.2.4"
   },
   "dependencies": {
