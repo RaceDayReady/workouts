@@ -1,0 +1,29 @@
+{
+  "name": "@rdr/workouts",
+  "version": "0.1.0",
+  "description": "Workout schemas, types, and integration utilities.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "prettier --check .",
+    "lint:fix": "prettier --write .",
+    "test": "vitest run",
+    "type-check": "tsc --noEmit -p tsconfig.json",
+    "release:check": "npm run lint && npm run type-check && npm run build && npm pack --dry-run"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}
