@@ -3,11 +3,13 @@ import type { WorkoutSegmentItem, WorkoutIndividualItem } from '../../workouts/w
 import type {
   GarminSwimStrokeType,
   GarminWorkout,
+  GarminWorkoutStep,
   GarminWorkoutRegularStep,
   GarminWorkoutRepeatStep,
   GarminWorkoutSegment,
   GarminWorkoutSport,
 } from './garmin-workout-types';
+import { GarminWorkoutSchema } from './garmin-workout-types';
 
 export interface GarminExportOptions {
   workoutName: string;
@@ -22,120 +24,208 @@ const SWIM_STROKE_TO_GARMIN: Record<string, GarminSwimStrokeType> = {
   drill: 'MIXED',
 };
 
-function mapIndividualToRegularStep(
+function createStepOrderGenerator(): () => number {
+  let currentStepOrder = 0;
+
+  return () => {
+    currentStepOrder += 1;
+    return currentStepOrder;
+  };
+}
+
+function getDistanceIfSupported(item: WorkoutIndividualItem): number | undefined {
+  if (item.discipline !== 'swim') {
+    return undefined;
+  }
+
+  return item.target_distance_meters;
+}
+
+function resolveStepDuration(item: WorkoutIndividualItem): {
+  durationType: GarminWorkoutRegularStep['durationType'];
+  durationValue: number;
+} {
+  const distance = getDistanceIfSupported(item);
+  if (typeof distance === 'number' && distance > 0) {
+    return {
+      durationType: 'DISTANCE',
+      durationValue: distance,
+    };
+  }
+
+  if (typeof item.target_duration_seconds === 'number' && item.target_duration_seconds > 0) {
+    return {
+      durationType: 'TIME',
+      durationValue: item.target_duration_seconds,
+    };
+  }
+
+  return {
+    durationType: 'TIME',
+    durationValue: 1,
+  };
+}
+
+function getRestSeconds(item: WorkoutIndividualItem): number {
+  return 'rest_seconds' in item ? (item.rest_seconds ?? 0) : 0;
+}
+
+function resolveStrokeType(item: WorkoutIndividualItem): GarminSwimStrokeType | undefined {
+  if (item.discipline !== 'swim' || !item.stroke) {
+    return undefined;
+  }
+
+  return SWIM_STROKE_TO_GARMIN[item.stroke];
+}
+
+function mapIndividualItemToStep(
   item: WorkoutIndividualItem,
-  stepOrder: number,
+  getNextStepOrder: () => number,
 ): GarminWorkoutRegularStep {
-  const hasDistance =
-    (item.discipline === 'swim' || item.discipline === 'run') &&
-    typeof item.target_distance_meters === 'number';
-  const strokeType =
-    item.discipline === 'swim' && item.stroke ? SWIM_STROKE_TO_GARMIN[item.stroke] : undefined;
+  const duration = resolveStepDuration(item);
 
   return {
     type: 'WorkoutStep',
-    stepOrder,
-    intensity: item.rest_seconds && item.rest_seconds > 0 ? 'RECOVERY' : 'ACTIVE',
+    stepOrder: getNextStepOrder(),
+    intensity: 'ACTIVE',
     description: item.name,
-    durationType: hasDistance ? 'DISTANCE' : 'TIME',
-    durationValue:
-      hasDistance && (item.discipline === 'swim' || item.discipline === 'run')
-        ? item.target_distance_meters
-        : item.target_duration_seconds,
+    durationType: duration.durationType,
+    durationValue: duration.durationValue,
     targetType: 'PACE_ZONE',
     targetValue: item.toZone ?? item.zone,
     targetValueLow: item.zone,
     targetValueHigh: item.toZone ?? item.zone,
-    strokeType,
+    strokeType: resolveStrokeType(item),
   };
 }
 
-function mapGroupToRepeatStep(
+function mapGroupItemToRepeatStep(
   item: Extract<WorkoutSegmentItem, { type: 'group' }>,
-  stepOrder: number,
+  getNextStepOrder: () => number,
 ): GarminWorkoutRepeatStep {
-  const steps = item.segments.map((segment, idx) => mapIndividualToRegularStep(segment, idx + 1));
+  const repeatStepOrder = getNextStepOrder();
+  const nestedSteps = item.segments.map((segment) =>
+    mapIndividualItemToStep(segment, getNextStepOrder),
+  );
 
   return {
     type: 'WorkoutRepeatStep',
-    stepOrder,
+    stepOrder: repeatStepOrder,
     intensity: 'INTERVAL',
     description: item.name ?? `Repeat x${item.repeatCount}`,
     repeatType: 'REPEAT_UNTIL_STEPS_CMPLT',
     repeatValue: item.repeatCount,
-    steps,
+    steps: nestedSteps,
   };
 }
 
-function buildGarminSegment(
-  workoutSegments: WorkoutSegmentItem[],
-  sport: GarminWorkoutSport,
-): GarminWorkoutSegment {
-  const steps = workoutSegments.map((item, idx) => {
+function estimateDurationInSeconds(workoutSegments: WorkoutSegmentItem[]): number | undefined {
+  let totalDurationInSeconds = 0;
+
+  for (const item of workoutSegments) {
     if (item.type === 'group') {
-      return mapGroupToRepeatStep(item, idx + 1);
+      let oneLoopDurationInSeconds = 0;
+      for (const segment of item.segments) {
+        oneLoopDurationInSeconds +=
+          (segment.target_duration_seconds ?? 0) + getRestSeconds(segment);
+      }
+      totalDurationInSeconds += oneLoopDurationInSeconds * item.repeatCount;
+      continue;
     }
 
-    return mapIndividualToRegularStep(item, idx + 1);
-  });
+    totalDurationInSeconds += (item.target_duration_seconds ?? 0) + getRestSeconds(item);
+  }
 
-  const estimatedDurationInSecs = workoutSegments.reduce((total, item) => {
+  return totalDurationInSeconds || undefined;
+}
+
+function estimateDistanceInMeters(workoutSegments: WorkoutSegmentItem[]): number | undefined {
+  let totalDistanceInMeters = 0;
+
+  for (const item of workoutSegments) {
     if (item.type === 'group') {
-      const groupDuration = item.segments.reduce((segmentTotal, segment) => {
-        return segmentTotal + segment.target_duration_seconds + (segment.rest_seconds ?? 0);
-      }, 0);
-
-      return total + groupDuration * item.repeatCount;
-    }
-
-    return total + item.target_duration_seconds + (item.rest_seconds ?? 0);
-  }, 0);
-
-  const estimatedDistanceInMeters = workoutSegments.reduce((total, item) => {
-    if (item.type === 'group') {
-      const groupDistance = item.segments.reduce((segmentTotal, segment) => {
+      let oneLoopDistanceInMeters = 0;
+      for (const segment of item.segments) {
         if (segment.discipline === 'bike') {
-          return segmentTotal;
+          continue;
         }
-
-        return segmentTotal + (segment.target_distance_meters ?? 0);
-      }, 0);
-
-      return total + groupDistance * item.repeatCount;
+        oneLoopDistanceInMeters += segment.target_distance_meters ?? 0;
+      }
+      totalDistanceInMeters += oneLoopDistanceInMeters * item.repeatCount;
+      continue;
     }
 
     if (item.discipline === 'bike') {
-      return total;
+      continue;
     }
 
-    return total + (item.target_distance_meters ?? 0);
-  }, 0);
+    totalDistanceInMeters += item.target_distance_meters ?? 0;
+  }
 
-  return {
-    sport,
-    estimatedDurationInSecs: estimatedDurationInSecs || undefined,
-    estimatedDistanceInMeters: estimatedDistanceInMeters || undefined,
-    steps,
-  };
+  return totalDistanceInMeters || undefined;
 }
 
-export function exportWorkoutToGarmin(
-  workoutSegments: WorkoutSegmentItem[],
-  options: GarminExportOptions,
-): GarminWorkout {
-  const segment = buildGarminSegment(workoutSegments, options.sport);
-
-  return {
-    workoutName: options.workoutName,
-    description: options.description,
-    sport: options.sport,
-    estimatedDurationInSecs: segment.estimatedDurationInSecs,
-    estimatedDistanceInMeters: segment.estimatedDistanceInMeters,
-    segments: [segment],
-  };
+function assertPositiveDuration(step: GarminWorkoutRegularStep): void {
+  if (typeof step.durationValue !== 'number' || step.durationValue <= 0) {
+    throw new Error(`Garmin step "${step.description ?? 'unnamed'}" has invalid durationValue`);
+  }
 }
 
-// TODO
+function validateNoDuplicateStepOrders(steps: GarminWorkoutStep[]): void {
+  const seenStepOrders = new Set<number>();
+
+  for (const topLevelStep of steps) {
+    if (typeof topLevelStep.stepOrder === 'number') {
+      if (seenStepOrders.has(topLevelStep.stepOrder)) {
+        throw new Error(`Duplicate Garmin stepOrder detected: ${topLevelStep.stepOrder}`);
+      }
+      seenStepOrders.add(topLevelStep.stepOrder);
+    }
+
+    if (topLevelStep.type === 'WorkoutRepeatStep') {
+      for (const nestedStep of topLevelStep.steps) {
+        if (typeof nestedStep.stepOrder === 'number') {
+          if (seenStepOrders.has(nestedStep.stepOrder)) {
+            throw new Error(`Duplicate Garmin stepOrder detected: ${nestedStep.stepOrder}`);
+          }
+          seenStepOrders.add(nestedStep.stepOrder);
+        }
+      }
+    }
+  }
+}
+
+function validatePositiveDurations(steps: GarminWorkoutStep[]): void {
+  for (const topLevelStep of steps) {
+    if (topLevelStep.type === 'WorkoutStep') {
+      assertPositiveDuration(topLevelStep);
+      continue;
+    }
+
+    for (const nestedStep of topLevelStep.steps) {
+      assertPositiveDuration(nestedStep);
+    }
+  }
+}
+
+function buildGarminSteps(workoutSegments: WorkoutSegmentItem[]): GarminWorkoutStep[] {
+  const getNextStepOrder = createStepOrderGenerator();
+  const steps: GarminWorkoutStep[] = [];
+
+  for (const item of workoutSegments) {
+    if (item.type === 'group') {
+      steps.push(mapGroupItemToRepeatStep(item, getNextStepOrder));
+    } else {
+      steps.push(mapIndividualItemToStep(item, getNextStepOrder));
+    }
+  }
+
+  validateNoDuplicateStepOrders(steps);
+  validatePositiveDurations(steps);
+
+  return steps;
+}
+
 export class GarminExporter implements WorkoutExporter<GarminWorkout> {
   private readonly options: GarminExportOptions;
 
@@ -144,16 +234,20 @@ export class GarminExporter implements WorkoutExporter<GarminWorkout> {
   }
 
   async export(workoutSegments: WorkoutSegmentItem[]): Promise<GarminWorkout> {
-    const segment = buildGarminSegment(workoutSegments, this.options.sport);
+    const segment: GarminWorkoutSegment = {
+      sport: this.options.sport,
+      estimatedDurationInSecs: estimateDurationInSeconds(workoutSegments),
+      estimatedDistanceInMeters: estimateDistanceInMeters(workoutSegments),
+      steps: buildGarminSteps(workoutSegments),
+    };
 
-    // TODO
-    return {
+    return GarminWorkoutSchema.parse({
       workoutName: this.options.workoutName,
       description: this.options.description,
       sport: this.options.sport,
       estimatedDurationInSecs: segment.estimatedDurationInSecs,
       estimatedDistanceInMeters: segment.estimatedDistanceInMeters,
       segments: [segment],
-    };
+    });
   }
 }

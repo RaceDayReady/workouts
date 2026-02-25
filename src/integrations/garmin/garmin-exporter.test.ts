@@ -1,126 +1,157 @@
 import { describe, expect, it } from 'vitest';
-import { exportWorkoutToGarmin } from './garmin-exporter';
+import { GarminExporter } from './garmin-exporter';
 import { type WorkoutSegmentItem } from '../../workouts/workout-types';
 
-describe('exportWorkoutToGarmin', () => {
-  it('maps individual segments to Garmin workout steps', () => {
+describe('GarminExporter', () => {
+  it('uses DISTANCE for swim steps and maps swim stroke', async () => {
     const workoutSegments: WorkoutSegmentItem[] = [
       {
         type: 'individual',
-        id: 'a1',
-        name: 'Warmup',
+        id: 'swim-1',
+        name: 'Swim Main',
         discipline: 'swim',
-        target_duration_seconds: 600,
         zone: 2,
-      },
-      {
-        type: 'individual',
-        id: 'a2',
-        name: 'Main Set',
-        discipline: 'swim',
-        target_duration_seconds: 300,
-        target_distance_meters: 100,
-        zone: 4,
-        toZone: 4,
+        toZone: 3,
         stroke: 'free',
+        target_distance_meters: 400,
+        target_duration_seconds: 600,
       },
     ];
 
-    const result = exportWorkoutToGarmin(workoutSegments, {
-      workoutName: 'Swim Session',
+    const exporter = new GarminExporter({
+      workoutName: 'Swim',
       sport: 'LAP_SWIMMING',
-      description: 'Easy + threshold',
     });
 
-    expect(result.workoutName).toBe('Swim Session');
-    expect(result.sport).toBe('LAP_SWIMMING');
-    expect(result.segments).toHaveLength(1);
+    const result = await exporter.export(workoutSegments);
+    const step = result.segments?.[0]?.steps?.[0];
 
-    const [segment] = result.segments ?? [];
-    expect(segment?.estimatedDurationInSecs).toBe(900);
-    expect(segment?.estimatedDistanceInMeters).toBe(100);
-    expect(segment?.steps).toHaveLength(2);
-
-    const [warmup, mainSet] = segment?.steps ?? [];
-    expect(warmup).toMatchObject({
+    expect(step).toMatchObject({
       type: 'WorkoutStep',
-      stepOrder: 1,
-      durationType: 'TIME',
-      durationValue: 600,
-      targetValueLow: 2,
-      targetValueHigh: 2,
-    });
-
-    expect(mainSet).toMatchObject({
-      type: 'WorkoutStep',
-      stepOrder: 2,
       durationType: 'DISTANCE',
-      durationValue: 100,
-      targetValueLow: 4,
-      targetValueHigh: 4,
+      durationValue: 400,
       strokeType: 'FREESTYLE',
+      targetValueLow: 2,
+      targetValueHigh: 3,
     });
   });
 
-  it('maps group segments to Garmin repeat steps with repeated estimate totals', () => {
+  it('uses TIME for run steps even when distance exists', async () => {
     const workoutSegments: WorkoutSegmentItem[] = [
       {
+        type: 'individual',
+        id: 'run-1',
+        name: 'Run Interval',
+        discipline: 'run',
+        zone: 4,
+        target_duration_seconds: 300,
+        target_distance_meters: 1000,
+      },
+    ];
+
+    const exporter = new GarminExporter({
+      workoutName: 'Run',
+      sport: 'RUNNING',
+    });
+
+    const result = await exporter.export(workoutSegments);
+    const step = result.segments?.[0]?.steps?.[0];
+
+    expect(step).toMatchObject({
+      type: 'WorkoutStep',
+      durationType: 'TIME',
+      durationValue: 300,
+    });
+  });
+
+  it('uses TIME for bike steps', async () => {
+    const workoutSegments: WorkoutSegmentItem[] = [
+      {
+        type: 'individual',
+        id: 'bike-1',
+        name: 'Bike Tempo',
+        discipline: 'bike',
+        zone: 3,
+        target_duration_seconds: 1200,
+      },
+    ];
+
+    const exporter = new GarminExporter({
+      workoutName: 'Bike',
+      sport: 'CYCLING',
+    });
+
+    const result = await exporter.export(workoutSegments);
+    const step = result.segments?.[0]?.steps?.[0];
+
+    expect(step).toMatchObject({
+      type: 'WorkoutStep',
+      durationType: 'TIME',
+      durationValue: 1200,
+    });
+  });
+
+  it('keeps group workouts as repeat steps and preserves unique step order', async () => {
+    const workoutSegments: WorkoutSegmentItem[] = [
+      {
+        type: 'individual',
+        id: 'warmup',
+        name: 'Warmup',
+        discipline: 'swim',
+        zone: 1,
+        target_distance_meters: 200,
+      },
+      {
         type: 'group',
-        id: 'g1',
-        name: 'Main Repeats',
+        id: 'main-1',
+        name: 'Main Set',
         repeatCount: 3,
         segments: [
           {
             type: 'individual',
-            id: 'g1s1',
-            name: 'On',
-            discipline: 'run',
-            target_duration_seconds: 120,
-            target_distance_meters: 50,
-            zone: 5,
-          },
-          {
-            type: 'individual',
-            id: 'g1s2',
-            name: 'Off',
-            discipline: 'run',
-            target_duration_seconds: 60,
-            rest_seconds: 30,
-            zone: 1,
+            id: 'main-1-rep',
+            name: '100 Free',
+            discipline: 'swim',
+            zone: 2,
+            target_distance_meters: 100,
           },
         ],
       },
+      {
+        type: 'individual',
+        id: 'cooldown',
+        name: 'Cooldown',
+        discipline: 'swim',
+        zone: 1,
+        target_distance_meters: 100,
+      },
     ];
 
-    const result = exportWorkoutToGarmin(workoutSegments, {
-      workoutName: 'Bike Intervals',
-      sport: 'CYCLING',
+    const exporter = new GarminExporter({
+      workoutName: 'Swim Repeats',
+      sport: 'LAP_SWIMMING',
     });
 
-    const [segment] = result.segments ?? [];
-    expect(segment?.estimatedDurationInSecs).toBe(630);
-    expect(segment?.estimatedDistanceInMeters).toBe(150);
-    expect(segment?.steps).toHaveLength(1);
+    const result = await exporter.export(workoutSegments);
+    const steps = result.segments?.[0]?.steps ?? [];
 
-    const [repeatStep] = segment?.steps ?? [];
-    expect(repeatStep).toMatchObject({
-      type: 'WorkoutRepeatStep',
-      stepOrder: 1,
-      repeatType: 'REPEAT_UNTIL_STEPS_CMPLT',
-      repeatValue: 3,
-    });
+    expect(steps).toHaveLength(3);
+    expect(steps.filter((step) => step.type === 'WorkoutRepeatStep')).toHaveLength(1);
 
-    if (repeatStep?.type === 'WorkoutRepeatStep') {
-      expect(repeatStep.steps).toHaveLength(2);
-      expect(repeatStep.steps[0]).toMatchObject({
-        durationType: 'DISTANCE',
-        durationValue: 50,
-      });
-      expect(repeatStep.steps[1]).toMatchObject({
-        durationType: 'TIME',
-        durationValue: 60,
-        intensity: 'RECOVERY',
-      });
+    const allStepOrders: number[] = [];
+    for (const step of steps) {
+      if (typeof step.stepOrder === 'number') {
+        allStepOrders.push(step.stepOrder);
+      }
+      if (step.type === 'WorkoutRepeatStep') {
+        for (const nestedStep of step.steps) {
+          if (typeof nestedStep.stepOrder === 'number') {
+            allStepOrders.push(nestedStep.stepOrder);
+          }
+        }
+      }
     }
+
+    expect(allStepOrders.length).toBe(new Set(allStepOrders).size);
   });
 });

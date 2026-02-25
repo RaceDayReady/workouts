@@ -1,34 +1,38 @@
 import { z } from 'zod';
 
-// --- ENUMS
+/**
+ * Enums
+ */
 
 export const GarminWorkoutSportSchema = z.enum([
-  'MULTI_SPORT',
   'RUNNING',
   'CYCLING',
   'LAP_SWIMMING',
-  'STRENGTH_TRAINING',
-  'CARDIO_TRAINING',
-  'GENERIC',
-  'YOGA',
-  'PILATES',
+  // Not supported for now:
+  // 'STRENGTH_TRAINING',
+  // 'CARDIO_TRAINING',
+  // 'GENERIC',
+  // 'YOGA',
+  // 'PILATES',
+  // 'MULTI_SPORT',
 ]);
 export type GarminWorkoutSport = z.infer<typeof GarminWorkoutSportSchema>;
 
-export const GarminPoolLengthUnitSchema = z.enum(['YARD', 'METER']);
+const GarminPoolLengthUnitSchema = z.enum(['YARD', 'METER']);
 export type GarminPoolLengthUnit = z.infer<typeof GarminPoolLengthUnitSchema>;
 
-export const GarminWorkoutRepeatTypeSchema = z.enum([
+const GarminWorkoutRepeatTypeSchema = z.enum([
   'REPEAT_UNTIL_STEPS_CMPLT',
   'REPEAT_UNTIL_TIME',
   'REPEAT_UNTIL_DISTANCE',
-  'REPEAT_UNTIL_CALORIES',
-  'REPEAT_UNTIL_HR_LESS_THAN',
-  'REPEAT_UNTIL_HR_GREATER_THAN',
-  'REPEAT_UNTIL_POWER_LESS_THAN',
-  'REPEAT_UNTIL_POWER_GREATER_THAN',
-  'REPEAT_UNTIL_POWER_LAST_LAP_LESS_THAN',
-  'REPEAT_UNTIL_MAX_POWER_LAST_LAP_LESS_THAN',
+  // Not supported for now:
+  // 'REPEAT_UNTIL_CALORIES',
+  // 'REPEAT_UNTIL_HR_LESS_THAN',
+  // 'REPEAT_UNTIL_HR_GREATER_THAN',
+  // 'REPEAT_UNTIL_POWER_LESS_THAN',
+  // 'REPEAT_UNTIL_POWER_GREATER_THAN',
+  // 'REPEAT_UNTIL_POWER_LAST_LAP_LESS_THAN',
+  // 'REPEAT_UNTIL_MAX_POWER_LAST_LAP_LESS_THAN',
 ]);
 export type GarminWorkoutRepeatType = z.infer<typeof GarminWorkoutRepeatTypeSchema>;
 
@@ -109,7 +113,9 @@ export type GarminSwimEquipmentType = z.infer<typeof GarminSwimEquipmentTypeSche
 export const GarminWeightDisplayUnitSchema = z.enum(['KILOGRAM', 'POUND']);
 export type GarminWeightDisplayUnit = z.infer<typeof GarminWeightDisplayUnitSchema>;
 
-// --- STEP SCHEMAS
+/**
+ * Step
+ */
 
 export const GarminWorkoutStepBaseSchema = z.object({
   stepId: z.number().optional(), // Set by server, ignored for create
@@ -158,7 +164,9 @@ export const GarminWorkoutStepSchema = z.discriminatedUnion('type', [
 ]);
 export type GarminWorkoutStep = z.infer<typeof GarminWorkoutStepSchema>;
 
-// --- SEGMENT
+/**
+ * Segment
+ */
 
 export const GarminWorkoutSegmentSchema = z.object({
   segmentOrder: z.number().optional(),
@@ -171,7 +179,10 @@ export const GarminWorkoutSegmentSchema = z.object({
 });
 export type GarminWorkoutSegment = z.infer<typeof GarminWorkoutSegmentSchema>;
 
-// --- WORKOUT
+/**
+ * Workout
+ * One segment per sport type.
+ */
 
 export const GarminWorkoutSchema = z.object({
   workoutId: z.number().optional(),
