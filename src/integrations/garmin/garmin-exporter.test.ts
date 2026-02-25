@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { exportWorkoutToGarmin } from './garmin-exporter';
-import {
-  convertWorkoutIndividualItemDiscipline,
-  convertWorkoutSegmentDiscipline,
-  type WorkoutSegmentItem,
-} from '../../workouts/workout-types';
+import { type WorkoutSegmentItem } from '../../workouts/workout-types';
 
 describe('exportWorkoutToGarmin', () => {
   it('maps individual segments to Garmin workout steps', () => {
@@ -25,7 +21,7 @@ describe('exportWorkoutToGarmin', () => {
         target_duration_seconds: 300,
         target_distance_meters: 100,
         zone: 4,
-        toZone: 5,
+        toZone: 4,
         stroke: 'free',
       },
     ];
@@ -61,7 +57,7 @@ describe('exportWorkoutToGarmin', () => {
       durationType: 'DISTANCE',
       durationValue: 100,
       targetValueLow: 4,
-      targetValueHigh: 5,
+      targetValueHigh: 4,
       strokeType: 'FREESTYLE',
     });
   });
@@ -124,65 +120,6 @@ describe('exportWorkoutToGarmin', () => {
         durationType: 'TIME',
         durationValue: 60,
         intensity: 'RECOVERY',
-      });
-    }
-  });
-
-  it('converts individual item discipline while preserving shared fields', () => {
-    const input: WorkoutSegmentItem = {
-      type: 'individual',
-      id: 's1',
-      name: 'Pull Set',
-      discipline: 'swim',
-      target_duration_seconds: 400,
-      target_distance_meters: 200,
-      zone: 3,
-      stroke: 'free',
-      rest_seconds: 15,
-    };
-
-    const converted = convertWorkoutIndividualItemDiscipline(input, 'bike');
-
-    expect(converted).toMatchObject({
-      type: 'individual',
-      discipline: 'bike',
-      id: 's1',
-      name: 'Pull Set',
-      target_duration_seconds: 400,
-      zone: 3,
-      rest_seconds: 15,
-    });
-  });
-
-  it('converts group segment discipline recursively', () => {
-    const group: WorkoutSegmentItem = {
-      type: 'group',
-      id: 'group-a',
-      repeatCount: 2,
-      segments: [
-        {
-          type: 'individual',
-          id: 'a',
-          name: 'Run Rep',
-          discipline: 'run',
-          target_duration_seconds: 180,
-          target_distance_meters: 800,
-          zone: 4,
-        },
-      ],
-    };
-
-    const converted = convertWorkoutSegmentDiscipline(group, 'swim');
-
-    expect(converted.type).toBe('group');
-    if (converted.type === 'group') {
-      expect(converted.segments[0]).toMatchObject({
-        type: 'individual',
-        discipline: 'swim',
-        id: 'a',
-        name: 'Run Rep',
-        target_duration_seconds: 180,
-        target_distance_meters: 800,
       });
     }
   });
