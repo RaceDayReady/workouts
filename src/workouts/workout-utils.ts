@@ -10,7 +10,9 @@ export function getTotalDistanceMeters(segments: WorkoutSegmentItem[]): number {
       }, 0);
       return total + groupDistance * segment.repeatCount;
     }
-    return total + ('target_distance_meters' in segment ? (segment.target_distance_meters ?? 0) : 0);
+    return (
+      total + ('target_distance_meters' in segment ? (segment.target_distance_meters ?? 0) : 0)
+    );
   }, 0);
 }
 
