@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { WorkoutIndividualItemBaseSchema } from './workout-base-types';
+import { WorkoutIndividualItemBaseSchema } from './base-workout-types';
 
 export const RunWorkoutIndividualItemSchema = WorkoutIndividualItemBaseSchema.extend({
   discipline: z.literal('run'),
