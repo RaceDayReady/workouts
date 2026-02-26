@@ -1,4 +1,4 @@
-# @rdr/workouts
+# @racedayready/workouts
 
 Shared workout schemas, types and utilities used by RDR and benchmarking tools.
 
