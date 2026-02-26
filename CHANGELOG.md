@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.1 - 2026-02-25
+
+- Add utils for duration, distance and total segments.
+
 ## 0.1.0 - 2026-02-25
 
 - Initial release

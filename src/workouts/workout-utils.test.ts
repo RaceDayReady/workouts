@@ -4,12 +4,12 @@ import {
   getTotalDurationSeconds,
   getTotalSegmentCount,
 } from './workout-utils';
-import type { WorkoutSegmentItem } from './workout-types';
+import type { WorkoutGroupItem, WorkoutIndividualItem, WorkoutSegmentItem } from './workout-types';
 
 const swim = (
   id: string,
   overrides?: Partial<{ target_distance_meters: number; target_duration_seconds: number }>,
-): WorkoutSegmentItem => ({
+): WorkoutIndividualItem => ({
   type: 'individual',
   id,
   name: id,
@@ -21,7 +21,7 @@ const swim = (
 const bike = (
   id: string,
   overrides?: Partial<{ target_duration_seconds: number }>,
-): WorkoutSegmentItem => ({
+): WorkoutIndividualItem => ({
   type: 'individual',
   id,
   name: id,
@@ -30,14 +30,11 @@ const bike = (
   ...overrides,
 });
 
-const group = (
-  repeatCount: number,
-  segments: WorkoutSegmentItem[],
-): WorkoutSegmentItem => ({
+const group = (repeatCount: number, segments: WorkoutSegmentItem[]): WorkoutGroupItem => ({
   type: 'group',
   id: 'group',
   repeatCount,
-  segments: segments as any,
+  segments: segments as unknown as WorkoutIndividualItem[],
 });
 
 describe('getTotalDistanceMeters', () => {
