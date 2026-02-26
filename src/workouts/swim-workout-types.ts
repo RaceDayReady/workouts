@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { WorkoutIndividualItemBaseSchema } from './workout-base-types';
+import { WorkoutIndividualItemBaseSchema } from './base-workout-types';
 
 export const SwimStrokeSchema = z.enum(['free', 'kick', 'drill', 'choice']);
 export type SwimStroke = z.infer<typeof SwimStrokeSchema>;
