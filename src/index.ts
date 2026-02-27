@@ -11,4 +11,5 @@ export {
   getDurationSeconds,
   getWeight,
   getTotalWeight,
+  flattenSegmentItems,
 } from './workouts/workout-utils';
