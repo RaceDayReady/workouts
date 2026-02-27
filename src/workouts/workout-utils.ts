@@ -1,19 +1,43 @@
-import type { WorkoutIndividualItem, WorkoutSegmentItem } from './workout-types';
+import type { WorkoutSegmentItem } from './workout-types';
 
 export const generateWorkoutItemId = () => Math.random().toString(36).substring(2, 9);
 
-export function getTotalDistanceMeters(segments: WorkoutSegmentItem[]): number {
-  return segments.reduce((total, segment) => {
-    if (segment.type === 'group') {
-      const groupDistance = segment.segments.reduce((sum: number, item: WorkoutIndividualItem) => {
-        return sum + ('target_distance_meters' in item ? (item.target_distance_meters ?? 0) : 0);
-      }, 0);
-      return total + groupDistance * segment.repeatCount;
-    }
+/**
+ * Individual item utils
+ */
+
+export function getDistanceMeters(item: WorkoutSegmentItem): number {
+  if (item.type === 'group') {
     return (
-      total + ('target_distance_meters' in segment ? (segment.target_distance_meters ?? 0) : 0)
+      item.segments.reduce(
+        (sum: number, item: WorkoutSegmentItem) => sum + getDistanceMeters(item),
+        0,
+      ) * item.repeatCount
     );
-  }, 0);
+  }
+
+  return 'target_distance_meters' in item ? (item.target_distance_meters ?? 0) : 0;
+}
+
+export function getDurationSeconds(item: WorkoutSegmentItem): number {
+  if (item.type === 'group') {
+    return (
+      item.segments.reduce(
+        (sum: number, item: WorkoutSegmentItem) => sum + getDurationSeconds(item),
+        0,
+      ) * item.repeatCount
+    );
+  }
+
+  return 'target_duration_seconds' in item ? (item.target_duration_seconds ?? 0) : 0;
+}
+
+/**
+ * Aggregates
+ */
+
+export function getTotalDistanceMeters(segments: WorkoutSegmentItem[]): number {
+  return segments.reduce((total, segment) => total + getDistanceMeters(segment), 0);
 }
 
 export function getTotalSegmentCount(segments: WorkoutSegmentItem[]): number {
@@ -26,13 +50,5 @@ export function getTotalSegmentCount(segments: WorkoutSegmentItem[]): number {
 }
 
 export function getTotalDurationSeconds(segments: WorkoutSegmentItem[]): number {
-  return segments.reduce((total, segment) => {
-    if (segment.type === 'group') {
-      const groupDuration = segment.segments.reduce((sum: number, item: WorkoutIndividualItem) => {
-        return sum + (item.target_duration_seconds ?? 0);
-      }, 0);
-      return total + groupDuration * segment.repeatCount;
-    }
-    return total + (segment.target_duration_seconds ?? 0);
-  }, 0);
+  return segments.reduce((total, segment) => total + getDurationSeconds(segment), 0);
 }
