@@ -7,4 +7,6 @@ export {
   getTotalDistanceMeters,
   getTotalDurationSeconds,
   getTotalSegmentCount,
+  getDistanceMeters,
+  getDurationSeconds,
 } from './workouts/workout-utils';
