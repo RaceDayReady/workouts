@@ -32,6 +32,18 @@ export function getDurationSeconds(item: WorkoutSegmentItem): number {
   return 'target_duration_seconds' in item ? (item.target_duration_seconds ?? 0) : 0;
 }
 
+export function getWeight(item: WorkoutSegmentItem): number {
+  if (item.type === 'group') {
+    return item.segments.reduce((total, segment) => total + getWeight(segment), 0);
+  }
+
+  if (item.discipline === 'swim') {
+    return 'target_distance_meters' in item ? (item.target_distance_meters ?? 0) : 0;
+  }
+
+  return 'target_duration_seconds' in item ? (item.target_duration_seconds ?? 0) : 0;
+}
+
 /**
  * Aggregates
  */
@@ -51,4 +63,9 @@ export function getTotalSegmentCount(segments: WorkoutSegmentItem[]): number {
 
 export function getTotalDurationSeconds(segments: WorkoutSegmentItem[]): number {
   return segments.reduce((total, segment) => total + getDurationSeconds(segment), 0);
+}
+
+// Weight is duration for run/bike workouts, distance for swim workouts
+export function getTotalWeight(segments: WorkoutSegmentItem[]): number {
+  return segments.reduce((total, segment) => total + getWeight(segment), 0);
 }
