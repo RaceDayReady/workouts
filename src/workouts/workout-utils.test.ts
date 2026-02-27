@@ -9,13 +9,34 @@ import {
 import type { WorkoutSegmentItem } from './workout-types';
 
 const swim = (overrides?: Partial<WorkoutSegmentItem>): WorkoutSegmentItem =>
-  ({ type: 'individual', id: 's', name: 's', discipline: 'swim', zone: 2, ...overrides }) as WorkoutSegmentItem;
+  ({
+    type: 'individual',
+    id: 's',
+    name: 's',
+    discipline: 'swim',
+    zone: 2,
+    ...overrides,
+  }) as WorkoutSegmentItem;
 
 const bike = (overrides?: Partial<WorkoutSegmentItem>): WorkoutSegmentItem =>
-  ({ type: 'individual', id: 'b', name: 'b', discipline: 'bike', zone: 4, ...overrides }) as WorkoutSegmentItem;
+  ({
+    type: 'individual',
+    id: 'b',
+    name: 'b',
+    discipline: 'bike',
+    zone: 4,
+    ...overrides,
+  }) as WorkoutSegmentItem;
 
 const run = (overrides?: Partial<WorkoutSegmentItem>): WorkoutSegmentItem =>
-  ({ type: 'individual', id: 'r', name: 'r', discipline: 'run', zone: 2, ...overrides }) as WorkoutSegmentItem;
+  ({
+    type: 'individual',
+    id: 'r',
+    name: 'r',
+    discipline: 'run',
+    zone: 2,
+    ...overrides,
+  }) as WorkoutSegmentItem;
 
 const group = (repeatCount: number, segments: WorkoutSegmentItem[]): WorkoutSegmentItem =>
   ({ type: 'group', id: 'g', repeatCount, segments }) as WorkoutSegmentItem;
