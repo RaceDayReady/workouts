@@ -69,3 +69,12 @@ export function getTotalDurationSeconds(segments: WorkoutSegmentItem[]): number 
 export function getTotalWeight(segments: WorkoutSegmentItem[]): number {
   return segments.reduce((total, segment) => total + getWeight(segment), 0);
 }
+
+export function flattenSegmentItems(segments: WorkoutSegmentItem[]): WorkoutSegmentItem[] {
+  return segments.flatMap((segment) => {
+    if (segment.type === 'group') {
+      return flattenSegmentItems(segment.segments);
+    }
+    return [segment];
+  });
+}
