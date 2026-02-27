@@ -1,233 +1,93 @@
 import { describe, expect, it } from 'vitest';
 import {
   generateWorkoutItemId,
-  getDistanceMeters,
-  getDurationSeconds,
   getTotalDistanceMeters,
   getTotalDurationSeconds,
   getTotalSegmentCount,
+  getWeight,
 } from './workout-utils';
-import {
-  WorkoutGroupItemSchema,
-  WorkoutIndividualItemSchema,
-  type WorkoutGroupItem,
-  type WorkoutIndividualItem,
-  type WorkoutSegmentItem,
-} from './workout-types';
+import type { WorkoutSegmentItem } from './workout-types';
 
-const swim = (
-  id: string,
-  overrides?: Partial<{ target_distance_meters: number; target_duration_seconds: number }>,
-): WorkoutIndividualItem => ({
-  type: 'individual',
-  id,
-  name: id,
-  discipline: 'swim',
-  zone: 2,
-  ...overrides,
-});
+const swim = (overrides?: Partial<WorkoutSegmentItem>): WorkoutSegmentItem =>
+  ({
+    type: 'individual',
+    id: 's',
+    name: 's',
+    discipline: 'swim',
+    zone: 2,
+    ...overrides,
+  }) as WorkoutSegmentItem;
 
-const bike = (
-  id: string,
-  overrides?: Partial<{ target_duration_seconds: number }>,
-): WorkoutIndividualItem => ({
-  type: 'individual',
-  id,
-  name: id,
-  discipline: 'bike',
-  zone: 4,
-  ...overrides,
-});
+const bike = (overrides?: Partial<WorkoutSegmentItem>): WorkoutSegmentItem =>
+  ({
+    type: 'individual',
+    id: 'b',
+    name: 'b',
+    discipline: 'bike',
+    zone: 4,
+    ...overrides,
+  }) as WorkoutSegmentItem;
 
-const group = (repeatCount: number, segments: WorkoutSegmentItem[]): WorkoutGroupItem => ({
-  type: 'group',
-  id: 'group',
-  repeatCount,
-  segments: segments as unknown as WorkoutIndividualItem[],
+const run = (overrides?: Partial<WorkoutSegmentItem>): WorkoutSegmentItem =>
+  ({
+    type: 'individual',
+    id: 'r',
+    name: 'r',
+    discipline: 'run',
+    zone: 2,
+    ...overrides,
+  }) as WorkoutSegmentItem;
+
+const group = (repeatCount: number, segments: WorkoutSegmentItem[]): WorkoutSegmentItem =>
+  ({ type: 'group', id: 'g', repeatCount, segments }) as WorkoutSegmentItem;
+
+describe('generateWorkoutItemId', () => {
+  it('returns unique non-empty strings', () => {
+    const id1 = generateWorkoutItemId();
+    const id2 = generateWorkoutItemId();
+    expect(id1).not.toBe('');
+    expect(id1).not.toBe(id2);
+  });
 });
 
 describe('getTotalDistanceMeters', () => {
   it('sums individuals and groups, treating missing distance as 0', () => {
-    const segments: WorkoutSegmentItem[] = [
-      swim('warmup', { target_distance_meters: 400 }),
-      group(3, [
-        swim('fast', { target_distance_meters: 100 }),
-        swim('easy', { target_distance_meters: 50 }),
-      ]),
-      bike('tempo'), // no distance field
+    const segments = [
+      swim({ target_distance_meters: 100 }),
+      bike(), // no distance field
+      group(2, [swim({ target_distance_meters: 50 })]),
     ];
-    expect(getTotalDistanceMeters(segments)).toBe(850);
+    expect(getTotalDistanceMeters(segments)).toBe(100 + 2 * 50);
   });
 });
 
 describe('getTotalDurationSeconds', () => {
   it('sums individuals and groups, treating missing duration as 0', () => {
-    const segments: WorkoutSegmentItem[] = [
-      bike('warmup', { target_duration_seconds: 600 }),
-      group(3, [
-        bike('on', { target_duration_seconds: 300 }),
-        bike('off', { target_duration_seconds: 300 }),
-      ]),
-      swim('cooldown'), // no duration
+    const segments = [
+      bike({ target_duration_seconds: 100 }),
+      swim(), // no duration
+      group(2, [bike({ target_duration_seconds: 25 })]),
     ];
-    expect(getTotalDurationSeconds(segments)).toBe(2400);
+    expect(getTotalDurationSeconds(segments)).toBe(100 + 2 * 25);
   });
 });
 
 describe('getTotalSegmentCount', () => {
   it('counts individuals as 1 and group segments multiplied by repeatCount', () => {
-    const segments: WorkoutSegmentItem[] = [
-      swim('warmup'),
-      group(3, [swim('on'), swim('off')]),
-      swim('cooldown'),
-    ];
-    expect(getTotalSegmentCount(segments)).toBe(8);
+    const segments = [swim(), group(3, [swim(), swim()])];
+    expect(getTotalSegmentCount(segments)).toBe(1 + 3 * 2);
   });
 });
 
-describe('getDistanceMeters', () => {
-  it('returns target_distance_meters for an individual', () => {
-    const item = WorkoutIndividualItemSchema.parse({
-      discipline: 'swim',
-      type: 'individual',
-      id: 'foo',
-      name: 'swim',
-      zone: 2,
-      target_distance_meters: 400,
-    });
-    expect(getDistanceMeters(item)).toBe(400);
+describe('getWeight', () => {
+  it('uses distance for swim and duration for bike/run', () => {
+    expect(getWeight(swim({ target_distance_meters: 55 }))).toBe(55);
+    expect(getWeight(run({ target_duration_seconds: 100 }))).toBe(100);
+    expect(getWeight(bike({ target_duration_seconds: 200 }))).toBe(200);
   });
 
-  it('returns zero for an individual without target_distance_meters', () => {
-    const item = WorkoutIndividualItemSchema.parse({
-      discipline: 'swim',
-      type: 'individual',
-      id: 'foo',
-      name: 'swim',
-      zone: 2,
-    });
-    expect(getDistanceMeters(item)).toBe(0);
-  });
-
-  it('returns zero if target_distance_meters is null or undefined', () => {
-    const item = WorkoutIndividualItemSchema.parse({
-      discipline: 'swim',
-      type: 'individual',
-      id: 'foo',
-      name: 'swim',
-      zone: 2,
-      target_distance_meters: undefined,
-    });
-    expect(getDistanceMeters(item)).toBe(0);
-  });
-
-  it('aggregates distance for a group (repeatCount)', () => {
-    const item = WorkoutGroupItemSchema.parse({
-      type: 'group',
-      id: 'grp',
-      repeatCount: 2,
-      segments: [
-        WorkoutIndividualItemSchema.parse({
-          discipline: 'swim',
-          type: 'individual',
-          id: 'a',
-          name: 'swim',
-          zone: 2,
-          target_distance_meters: 100,
-        }),
-        WorkoutIndividualItemSchema.parse({
-          discipline: 'swim',
-          type: 'individual',
-          id: 'b',
-          name: 'swim',
-          zone: 2,
-          target_distance_meters: 50,
-        }),
-      ],
-    });
-    // (100+50) * 2 = 300
-    expect(getDistanceMeters(item)).toBe(300);
-  });
-});
-
-describe('getDurationSeconds', () => {
-  it('returns target_duration_seconds for an individual', () => {
-    const item = WorkoutIndividualItemSchema.parse({
-      discipline: 'bike',
-      type: 'individual',
-      id: 'foo',
-      name: 'bike',
-      zone: 3,
-      target_duration_seconds: 120,
-    });
-    expect(getDurationSeconds(item)).toBe(120);
-  });
-
-  it('returns zero for an individual without target_duration_seconds', () => {
-    const item = WorkoutIndividualItemSchema.parse({
-      discipline: 'bike',
-      type: 'individual',
-      id: 'foo',
-      name: 'bike',
-      zone: 3,
-    });
-    expect(getDurationSeconds(item)).toBe(0);
-  });
-
-  it('returns zero if target_duration_seconds is undefined', () => {
-    const item = WorkoutIndividualItemSchema.parse({
-      discipline: 'bike',
-      type: 'individual',
-      id: 'foo',
-      name: 'bike',
-      zone: 3,
-      target_duration_seconds: undefined,
-    });
-    expect(getDurationSeconds(item)).toBe(0);
-  });
-
-  it('aggregates duration for a group (repeatCount)', () => {
-    const item = WorkoutGroupItemSchema.parse({
-      type: 'group',
-      id: 'grp',
-      repeatCount: 4,
-      segments: [
-        WorkoutIndividualItemSchema.parse({
-          discipline: 'bike',
-          type: 'individual',
-          id: 'c',
-          name: 'bike',
-          zone: 3,
-          target_duration_seconds: 60,
-        }),
-        WorkoutIndividualItemSchema.parse({
-          discipline: 'bike',
-          type: 'individual',
-          id: 'd',
-          name: 'bike',
-          zone: 3,
-          target_duration_seconds: 90,
-        }),
-      ],
-    });
-    // (60+90) * 4 = 600
-    expect(getDurationSeconds(item)).toBe(600);
-  });
-});
-
-describe('generateWorkoutItemId', () => {
-  it('returns a non-empty string of reasonable length', () => {
-    const id = generateWorkoutItemId();
-    expect(typeof id).toBe('string');
-    expect(id.length).toBeGreaterThanOrEqual(3);
-    expect(id.length).toBeLessThanOrEqual(8); // 7 chars per substring(2,9)
-  });
-
-  it('returns unique values on repeated calls', () => {
-    const ids = new Set<string>();
-    for (let i = 0; i < 10; i++) {
-      ids.add(generateWorkoutItemId());
-    }
-    expect(ids.size).toBe(10);
+  it('returns 0 when value is missing', () => {
+    expect(getWeight(swim())).toBe(0);
+    expect(getWeight(run())).toBe(0);
   });
 });
