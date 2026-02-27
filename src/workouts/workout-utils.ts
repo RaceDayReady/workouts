@@ -73,7 +73,8 @@ export function getTotalWeight(segments: WorkoutSegmentItem[]): number {
 export function flattenSegmentItems(segments: WorkoutSegmentItem[]): WorkoutSegmentItem[] {
   return segments.flatMap((segment) => {
     if (segment.type === 'group') {
-      return flattenSegmentItems(segment.segments);
+      const flattened = flattenSegmentItems(segment.segments);
+      return Array.from({ length: segment.repeatCount }, () => flattened).flat();
     }
     return [segment];
   });
