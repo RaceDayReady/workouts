@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  flattenSegmentItems,
   generateWorkoutItemId,
   getTotalDistanceMeters,
   getTotalDurationSeconds,
@@ -89,5 +90,25 @@ describe('getWeight', () => {
   it('returns 0 when value is missing', () => {
     expect(getWeight(swim())).toBe(0);
     expect(getWeight(run())).toBe(0);
+  });
+});
+
+describe('flattenSegmentItems', () => {
+  it('returns individuals as-is', () => {
+    const segments = [swim(), bike()];
+    expect(flattenSegmentItems(segments)).toEqual(segments);
+  });
+
+  it('flattens groups and repeats by repeatCount', () => {
+    const s = swim();
+    const b = bike();
+    const segments = [run(), group(3, [s, b])];
+    expect(flattenSegmentItems(segments)).toEqual([run(), s, b, s, b, s, b]);
+  });
+
+  it('flattens nested groups with repeatCount', () => {
+    const s = swim();
+    const segments = [group(2, [group(2, [s])])];
+    expect(flattenSegmentItems(segments)).toEqual([s, s, s, s]);
   });
 });

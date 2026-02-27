@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 0.1.8 - 2026-02-27
+
+- Fix bug where flattenSegmentItems didn't account for repeatCount.
+
 ## 0.1.7 - 2026-02-27
 
 - Add flattenSegmentItems util.
