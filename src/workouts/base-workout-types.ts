@@ -7,6 +7,6 @@ export const WorkoutIndividualItemBaseSchema = z.object({
   name: z.string(),
   target_duration_seconds: z.number().min(0).optional(),
   // Discipline-specific ranges are enforced in discipline-specific schemas
-  zone: z.number().min(1),
+  zone: z.number().min(1).optional(),
   toZone: z.number().min(1).optional(),
 });

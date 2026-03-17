@@ -2,12 +2,16 @@ import { z } from 'zod';
 import { BikeWorkoutIndividualItemSchema } from './bike-workout-types';
 import { generateWorkoutItemId } from './workout-utils';
 import { RunWorkoutIndividualItemSchema } from './run-workout-types';
+import { StrengthWorkoutIndividualItemSchema } from './strength-workout-types';
+import { StretchingWorkoutIndividualItemSchema } from './stretching-workout-types';
 import { SwimWorkoutIndividualItemSchema } from './swim-workout-types';
 
 export const WorkoutIndividualItemSchema = z.discriminatedUnion('discipline', [
   SwimWorkoutIndividualItemSchema,
   BikeWorkoutIndividualItemSchema,
   RunWorkoutIndividualItemSchema,
+  StrengthWorkoutIndividualItemSchema,
+  StretchingWorkoutIndividualItemSchema,
 ]);
 export type WorkoutIndividualItem = z.infer<typeof WorkoutIndividualItemSchema>;
 
@@ -26,5 +30,5 @@ export const WorkoutSegmentItemSchema = z.union([
 ]);
 export type WorkoutSegmentItem = z.infer<typeof WorkoutSegmentItemSchema>;
 
-export const WorkoutDisciplineSchema = z.enum(['swim', 'bike', 'run']);
+export const WorkoutDisciplineSchema = z.enum(['swim', 'bike', 'run', 'strength', 'stretching']);
 export type WorkoutDiscipline = z.infer<typeof WorkoutDisciplineSchema>;

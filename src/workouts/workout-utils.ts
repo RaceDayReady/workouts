@@ -43,6 +43,14 @@ export function getWeight(item: WorkoutSegmentItem): number {
     return getDistanceMeters(item);
   }
 
+  if (item.discipline === 'strength') {
+    return (item.sets ?? 1) * (item.reps ?? 1);
+  }
+
+  if (item.discipline === 'stretching') {
+    return item.hold_seconds ?? getDurationSeconds(item);
+  }
+
   return getDurationSeconds(item);
 }
 
