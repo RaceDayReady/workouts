@@ -24,4 +24,29 @@ describe('SwimWorkoutIndividualItemSchema', () => {
       }).success,
     ).toBe(false);
   });
+
+  it('accepts decimal zones up to 2 decimal places', () => {
+    expect(
+      SwimWorkoutIndividualItemSchema.safeParse({
+        type: 'individual',
+        id: 'swim-decimal',
+        name: 'Swim Set',
+        discipline: 'swim',
+        zone: 2.5,
+        toZone: 3.25,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects zones with more than 2 decimal places', () => {
+    expect(
+      SwimWorkoutIndividualItemSchema.safeParse({
+        type: 'individual',
+        id: 'swim-bad-decimal',
+        name: 'Too Precise',
+        discipline: 'swim',
+        zone: 2.125,
+      }).success,
+    ).toBe(false);
+  });
 });

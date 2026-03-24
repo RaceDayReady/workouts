@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { WorkoutIndividualItemBaseSchema } from './base-workout-types';
+import { WorkoutIndividualItemBaseSchema, zoneNumber } from './base-workout-types';
 
 export const BikeWorkoutIndividualItemSchema = WorkoutIndividualItemBaseSchema.extend({
   discipline: z.literal('bike'),
-  zone: z.number().min(1).max(7),
-  toZone: z.number().min(1).max(7).optional(),
+  zone: zoneNumber(1, 7),
+  toZone: zoneNumber(1, 7).optional(),
   // Bike-specific
   target_power_watts: z.number().min(0).optional(),
   target_cadence_rpm: z.number().min(0).optional(),

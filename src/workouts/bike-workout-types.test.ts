@@ -23,4 +23,28 @@ describe('BikeWorkoutIndividualItemSchema', () => {
       }).success,
     ).toBe(false);
   });
+
+  it('accepts decimal zones up to 2 decimal places', () => {
+    expect(
+      BikeWorkoutIndividualItemSchema.safeParse({
+        type: 'individual',
+        id: 'bike-decimal',
+        name: 'Sweet Spot',
+        discipline: 'bike',
+        zone: 4.5,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects zones with more than 2 decimal places', () => {
+    expect(
+      BikeWorkoutIndividualItemSchema.safeParse({
+        type: 'individual',
+        id: 'bike-bad-decimal',
+        name: 'Too Precise',
+        discipline: 'bike',
+        zone: 4.125,
+      }).success,
+    ).toBe(false);
+  });
 });
