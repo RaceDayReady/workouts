@@ -3,11 +3,7 @@ import { generateWorkoutItemId } from './workout-utils';
 
 /** Zone: supports up to 2 decimal places (e.g. 2, 3.5, 4.25) */
 export function zone(min: number, max: number) {
-  return z
-    .number()
-    .min(min)
-    .max(max)
-    .multipleOf(0.01)
+  return z.number().min(min).max(max).multipleOf(0.01);
 }
 
 export const WorkoutIndividualItemBaseSchema = z.object({
