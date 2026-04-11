@@ -6,6 +6,7 @@ export const RunWorkoutIndividualItemSchema = WorkoutIndividualItemBaseSchema.ex
   zone: zone(1, 5),
   toZone: zone(1, 5).optional(),
   // Run-specific
+  target_duration_seconds: z.number().min(0).optional(),
   target_distance_meters: z.number().min(0).optional(),
   target_pace_seconds_per_km: z.number().min(0).optional(),
 });
