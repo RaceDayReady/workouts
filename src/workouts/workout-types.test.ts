@@ -12,7 +12,6 @@ describe('WorkoutIndividualItemSchema', () => {
         type: 'individual',
         id: 'swim-1',
         name: 'Drills',
-        discipline: 'swim',
         zone: 2,
       }).success,
     ).toBe(true);
@@ -22,7 +21,6 @@ describe('WorkoutIndividualItemSchema', () => {
         type: 'individual',
         id: 'bike-1',
         name: 'Tempo',
-        discipline: 'bike',
         zone: 6,
       }).success,
     ).toBe(true);
@@ -32,7 +30,6 @@ describe('WorkoutIndividualItemSchema', () => {
         type: 'individual',
         id: 'run-1',
         name: 'Endurance',
-        discipline: 'run',
         zone: 3,
       }).success,
     ).toBe(true);
@@ -44,11 +41,35 @@ describe('WorkoutIndividualItemSchema', () => {
         type: 'individual',
         id: 'bad',
         name: '???',
-        discipline: 'yoga',
         zone: 1,
       }).success,
     ).toBe(false);
   });
+
+
+  it('accepts decimal zones up to 2 decimal places', () => {
+    expect(
+      WorkoutIndividualItemSchema.safeParse({
+        type: 'individual',
+        id: 'swim-decimal',
+        name: 'Swim Set',
+        zone: 2.5,
+        toZone: 3.25,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects zones with more than 2 decimal places', () => {
+    expect(
+      WorkoutIndividualItemSchema.safeParse({
+        type: 'individual',
+        id: 'swim-bad-decimal',
+        name: 'Too Precise',
+        zone: 2.125,
+      }).success,
+    ).toBe(false);
+  });
+
 });
 
 describe('WorkoutGroupItemSchema', () => {
@@ -63,14 +84,12 @@ describe('WorkoutGroupItemSchema', () => {
           type: 'individual',
           id: 'swim-set-1',
           name: 'Pace',
-          discipline: 'swim',
           zone: 2,
         },
         {
           type: 'individual',
           id: 'run-set-1',
           name: 'Intervals',
-          discipline: 'run',
           zone: 4,
         },
       ],
@@ -89,7 +108,6 @@ describe('WorkoutGroupItemSchema', () => {
           type: 'individual',
           id: 'swim-set-2',
           name: 'Long swim',
-          discipline: 'swim',
           zone: 2,
         },
       ],
@@ -115,7 +133,6 @@ describe('WorkoutSegmentItemSchema', () => {
       type: 'individual',
       id: 'id-abc',
       name: 'Steady',
-      discipline: 'bike',
       zone: 5,
     };
     const groupItem = {
@@ -128,7 +145,6 @@ describe('WorkoutSegmentItemSchema', () => {
           type: 'individual',
           id: 'id-xyz',
           name: 'Interval',
-          discipline: 'run',
           zone: 4,
         },
       ],

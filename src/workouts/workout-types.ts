@@ -1,14 +1,30 @@
 import { z } from 'zod';
-import { BikeWorkoutIndividualItemSchema } from './bike-workout-types';
 import { generateWorkoutItemId } from './workout-utils';
-import { RunWorkoutIndividualItemSchema } from './run-workout-types';
-import { SwimWorkoutIndividualItemSchema } from './swim-workout-types';
+import { SwimStrokeSchema } from './swim-workout-types';
 
-export const WorkoutIndividualItemSchema = z.discriminatedUnion('discipline', [
-  SwimWorkoutIndividualItemSchema,
-  BikeWorkoutIndividualItemSchema,
-  RunWorkoutIndividualItemSchema,
-]);
+/** Zone: supports up to 2 decimal places (e.g. 2, 3.5, 4.25) */
+export function zone(min: number, max: number) {
+  return z.number().min(min).max(max).multipleOf(0.01);
+}
+
+export const WorkoutIndividualItemSchema = z.object({
+  type: z.literal('individual'),
+  id: z.string().default(generateWorkoutItemId),
+  name: z.string(),
+  zone: zone(1, 7),
+  toZone: zone(1, 7).optional(),
+
+  // Bike + run
+  target_duration_seconds: z.number().min(0).optional(),
+
+  // Bike
+  target_cadence_rpm: z.number().min(0).optional(),
+
+  // Swim
+  target_distance_meters: z.number().min(0).optional(),
+  stroke: SwimStrokeSchema.optional(),
+  rest_seconds: z.number().min(0).optional(),
+});
 export type WorkoutIndividualItem = z.infer<typeof WorkoutIndividualItemSchema>;
 
 export const WorkoutGroupItemSchema = z.object({
