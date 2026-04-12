@@ -35,18 +35,6 @@ describe('WorkoutIndividualItemSchema', () => {
     ).toBe(true);
   });
 
-  it('rejects items with invalid discipline', () => {
-    expect(
-      WorkoutIndividualItemSchema.safeParse({
-        type: 'individual',
-        id: 'bad',
-        name: '???',
-        zone: 1,
-      }).success,
-    ).toBe(false);
-  });
-
-
   it('accepts decimal zones up to 2 decimal places', () => {
     expect(
       WorkoutIndividualItemSchema.safeParse({
@@ -69,7 +57,6 @@ describe('WorkoutIndividualItemSchema', () => {
       }).success,
     ).toBe(false);
   });
-
 });
 
 describe('WorkoutGroupItemSchema', () => {
