@@ -1,6 +1,6 @@
 {
   "name": "@racedayready/workouts",
-  "version": "0.1.11",
+  "version": "0.2.0",
   "description": "Workout schemas, types and utilities.",
   "license": "MIT",
   "private": false,
